@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Status - Smart Cart Splitter</title>
+  <meta name="description" content="View sequential installment progress and order details.">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>THE MODERN STORE</h1>
+          <span>Order Confirmation &amp; Split Tracking</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="/store" class="nav-link">Store</a>
+        <a href="/" class="nav-link">Cart (<span id="cart-count-badge">0</span>)</a>
+        <a href="/dashboard.html" class="nav-link">Merchant Dashboard</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- Breadcrumb -->
+    <div style="margin-bottom: 20px;">
+      <a href="/" style="font-size: 13px; color: var(--accent-blue); font-weight: 600;">&larr; Return to Store</a>
+    </div>
+
+    <div class="order-page-grid" id="order-container">
+      <!-- LEFT: Order Overview & Interactive Timeline -->
+      <section class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light);">
+          <div>
+            <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Order Confirmation</span>
+            <h2 id="order-number-title" style="font-size: 24px; font-weight: 800; margin-top: 2px;">Loading Order...</h2>
+            <div id="order-date-display" style="font-size: 13px; color: var(--text-muted); margin-top: 2px;"></div>
+          </div>
+          <div>
+            <span id="order-status-badge" class="badge badge-ready">Checking...</span>
+          </div>
+        </div>
+
+        <!-- Customer Summary -->
+        <div style="background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; margin-bottom: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Customer</span>
+            <div id="customer-name-display" style="font-weight: 600; font-size: 14px; margin-top: 2px;">-</div>
+            <div id="customer-email-display" style="font-size: 12px; color: var(--text-secondary);">-</div>
+          </div>
+          <div>
+            <span style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">Order Total</span>
+            <div id="order-total-display" style="font-weight: 800; font-size: 18px; color: var(--text-primary); margin-top: 2px;">₹0</div>
+          </div>
+        </div>
+
+        <!-- Payment Progress Header -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="font-size: 15px; font-weight: 700;">Payment Progress</h3>
+            <span id="progress-text-display" style="font-size: 13px; font-weight: 600; color: var(--accent-blue);">0 of 0 completed</span>
+          </div>
+          <!-- Progress bar -->
+          <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 9999px; overflow: hidden;">
+            <div id="progress-bar-fill" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 0.4s ease;"></div>
+          </div>
+        </div>
+
+        <!-- Visual Timeline -->
+        <div class="timeline" id="payment-timeline-list">
+          <!-- Timeline items injected here -->
+        </div>
+
+        <!-- Invoice Button -->
+        <div style="margin-top: 24px; border-top: 1px solid var(--border-light); padding-top: 18px; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted);">Sequential verification complete</div>
+          </div>
+          <button id="download-invoice-btn" class="btn-primary" style="width: auto; padding: 10px 20px; font-size: 14px;" onclick="handleDownloadInvoiceClick()">
+            📄 Download Invoice
+          </button>
+        </div>
+      </section>
+
+      <!-- RIGHT: Active Payment Console (If order still has unpaid splits) -->
+      <section class="card" id="active-payment-panel">
+        <div style="text-align: center;">
+          <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Current Active Installment</span>
+          <h3 id="active-payment-title" style="font-size: 18px; font-weight: 700; margin-top: 4px;">Payment 1 of 3</h3>
+          <div id="active-payment-amount" style="font-size: 32px; font-weight: 800; color: var(--text-primary); margin: 6px 0;">₹1,560</div>
+          
+          <div class="qr-wrapper" style="margin: 16px auto;">
+            <div class="qr-canvas-container" id="timeline-qr-container">
+              <!-- QR will be rendered here -->
+            </div>
+            <div class="qr-label">
+              <span>📱</span> Scan with UPI or Banking App
+            </div>
+          </div>
+
+          <div class="payment-actions">
+            <button class="btn-pay-now" id="timeline-pay-now-btn">
+              <span>💳</span> Pay Now
+            </button>
+            <button class="btn-simulate" id="timeline-simulate-btn" onclick="handleTimelineSimulatePayment()">
+              ⚡ Simulate Successful Payment
+            </button>
+          </div>
+
+          <div class="polling-status" style="margin-top: 16px;">
+            <div class="status-dot"></div>
+            <span>Waiting for payment &bull; Real-time status sync</span>
+          </div>
+
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 14px;">
+            This screen automatically refreshes as soon as payment confirmation is received.
+          </p>
+        </div>
+      </section>
+
+      <!-- RIGHT: Fully Paid Completion Card (shown when FULLY_PAID) -->
+      <section class="card" id="completion-panel" style="display: none;">
+        <div class="success-card" style="padding: 20px 0;">
+          <div class="success-icon-wrapper">✓</div>
+          <h3 class="success-title">Order Confirmed</h3>
+          <p class="success-order-num">All installments captured successfully.</p>
+
+          <div class="success-stats-box">
+            <div class="success-stat-item">
+              <span>Total Paid</span>
+              <strong id="final-paid-amount">₹4,680</strong>
+            </div>
+            <div class="success-stat-item">
+              <span>Split Savings</span>
+              <strong id="final-savings-amount">₹18.72</strong>
+            </div>
+          </div>
+
+          <button class="btn-primary" onclick="handleDownloadInvoiceClick()" style="margin-bottom: 12px;">
+            Download Official Invoice
+          </button>
+          
+          <a href="/dashboard.html" class="nav-link" style="display: block; border: 1px solid var(--border-light); text-align: center;">
+            View In Merchant Analytics &rarr;
+          </a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+  <script>
+    let currentOrderData = null;
+    let activeSplitData = null;
+    let pollingInterval = null;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('id') || 'ord-seed-01';
+
+    async function loadOrder() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/orders/${orderId}`);
+        if (!res.ok) throw new Error('Order not found');
+        const data = await res.json();
+        currentOrderData = data;
+
+        renderOrderDetails(data);
+
+        if (data.progress.isFullyPaid) {
+          if (pollingInterval) clearInterval(pollingInterval);
+        }
+      } catch (err) {
+        console.error('Error fetching order:', err);
+        document.getElementById('order-number-title').textContent = 'Order Not Found';
+      }
+    }
+
+    function renderOrderDetails(data) {
+      const order = data.order;
+      const splits = data.splits;
+      const progress = data.progress;
+
+      // Header fields
+      document.getElementById('order-number-title').textContent = order.order_number;
+      document.getElementById('order-date-display').textContent = new Date(order.created_at).toLocaleDateString('en-IN', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+      
+      const statusBadge = document.getElementById('order-status-badge');
+      statusBadge.textContent = order.status;
+      statusBadge.className = order.status === 'FULLY_PAID' ? 'badge badge-paid' : 'badge badge-ready';
+
+      document.getElementById('customer-name-display').textContent = order.customer_name;
+      document.getElementById('customer-email-display').textContent = order.customer_email;
+      document.getElementById('order-total-display').textContent = `₹${Number(order.total_amount).toLocaleString('en-IN')}`;
+
+      // Progress bar
+      document.getElementById('progress-text-display').textContent = `${progress.completedSplits} of ${progress.totalSplits} payments completed`;
+      document.getElementById('progress-bar-fill').style.width = `${progress.percentComplete}%`;
+
+      // Render timeline
+      const timelineEl = document.getElementById('payment-timeline-list');
+      timelineEl.innerHTML = splits.map(s => {
+        let dotContent = s.sequence_number;
+        let itemClass = 'locked';
+        let statusBadgeClass = 'badge-locked';
+
+        if (s.status === 'PAID') {
+          itemClass = 'paid';
+          dotContent = '✓';
+          statusBadgeClass = 'badge-paid';
+        } else if (s.status === 'READY') {
+          itemClass = 'ready';
+          statusBadgeClass = 'badge-ready';
+        }
+
+        return `
+          <div class="timeline-item ${itemClass}">
+            <div class="timeline-dot">${dotContent}</div>
+            <div class="timeline-card">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h4 style="font-size: 14px; font-weight: 700;">Payment ${s.sequence_number} of ${splits.length}</h4>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    ${s.paid_at ? 'Paid on ' + new Date(s.paid_at).toLocaleTimeString('en-IN') : (s.status === 'READY' ? 'Waiting for confirmation' : 'Locked')}
+                  </div>
+                </div>
+                <div style="text-align: right;">
+                  <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">₹${Number(s.amount).toLocaleString('en-IN')}</div>
+                  <span class="badge ${statusBadgeClass}" style="margin-top: 4px;">${s.status}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Right panel toggle: active payment vs completed
+      const activePanel = document.getElementById('active-payment-panel');
+      const completionPanel = document.getElementById('completion-panel');
+
+      if (progress.isFullyPaid) {
+        activePanel.style.display = 'none';
+        completionPanel.style.display = 'block';
+        document.getElementById('final-paid-amount').textContent = `₹${Number(order.total_amount).toLocaleString('en-IN')}`;
+        document.getElementById('final-savings-amount').textContent = `₹${Number(order.estimated_savings || 0).toFixed(2)}`;
+      } else {
+        completionPanel.style.display = 'none';
+        activePanel.style.display = 'block';
+
+        const readySplit = splits.find(s => s.status === 'READY');
+        if (readySplit) {
+          activeSplitData = readySplit;
+          document.getElementById('active-payment-title').textContent = `Payment ${readySplit.sequence_number} of ${splits.length}`;
+          document.getElementById('active-payment-amount').textContent = `₹${Number(readySplit.amount).toLocaleString('en-IN')}`;
+
+          const payUrl = readySplit.payment_url || `/demo-payment.html?orderId=${order.id}&splitId=${readySplit.id}`;
+          const fullPayUrl = payUrl.startsWith('http') ? payUrl : `${window.location.origin}${payUrl}`;
+
+          document.getElementById('timeline-pay-now-btn').onclick = () => {
+            window.open(fullPayUrl, '_blank');
+          };
+
+          renderQRCode(document.getElementById('timeline-qr-container'), fullPayUrl);
+        }
+      }
+    }
+
+    async function handleTimelineSimulatePayment() {
+      if (!activeSplitData || !currentOrderData) return;
+      const simBtn = document.getElementById('timeline-simulate-btn');
+      simBtn.disabled = true;
+      simBtn.textContent = 'Processing Payment...';
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/demo/complete-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: currentOrderData.order.id,
+            splitId: activeSplitData.id
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'Payment failed');
+        }
+        await loadOrder();
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        simBtn.disabled = false;
+        simBtn.textContent = '⚡ Simulate Successful Payment';
+      }
+    }
+
+    function handleDownloadInvoiceClick() {
+      if (currentOrderData && currentOrderData.order) {
+        downloadInvoice(currentOrderData.order.id);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrder();
+      pollingInterval = setInterval(loadOrder, 2500);
+    });
+  </script>
+</body>
+</html>

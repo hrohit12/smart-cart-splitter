@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Store - The Modern Store</title>
+  <meta name="description" content="Browse products and checkout securely with Smart Cart Splitter.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>THE MODERN STORE</h1>
+          <span>Smart Checkout Portal</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="/store" class="nav-link active">Store</a>
+        <a href="/" class="nav-link">Cart (<span id="cart-count-badge">0</span>)</a>
+        <a href="/dashboard.html" class="nav-link">Merchant Dashboard</a>
+        <span id="mode-badge" class="badge badge-demo">⚡ Demo Mode</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="container">
+    <div style="text-align: center; margin-bottom: 40px; margin-top: 60px;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">BNPL Virtual Card Engine</span>
+      <h2 style="font-size: 36px; font-weight: 800; margin-top: 12px;">Paste Link. Split Cost. Buy Anywhere.</h2>
+      <p style="color: var(--text-secondary); margin-top: 12px; max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+        Paste a product link from Amazon, Flipkart, or Myntra. We will generate a Smart Split Payment plan and issue you a single-use Virtual Credit Card to complete your purchase on their site!
+      </p>
+    </div>
+
+    <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);">
+      <form id="url-submit-form" onsubmit="event.preventDefault(); handleUrlSubmit();">
+        <label for="product-url" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Product URL</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="url" id="product-url" placeholder="https://amazon.in/dp/B0863TXGM3" required style="flex: 1; padding: 12px 16px; border: 1px solid var(--border-light); border-radius: 8px; font-size: 16px; outline: none;">
+          <button type="submit" id="url-submit-btn" class="btn-primary" style="white-space: nowrap; font-size: 16px; padding: 12px 24px;">Split Now &rarr;</button>
+        </div>
+      </form>
+      <div id="url-loading-state" style="display: none; text-align: center; margin-top: 20px; color: var(--text-muted);">
+        <div style="margin-bottom: 10px;">🔍 Analyzing product link...</div>
+        <div style="font-size: 12px;">Fetching live price and details</div>
+      </div>
+    </div>
+
+    <div style="margin-top: 60px; margin-bottom: 30px; text-align: center;">
+      <h3 style="font-size: 20px; font-weight: 700; color: var(--text-primary); opacity: 0.5;">&mdash; OR &mdash;</h3>
+    </div>
+    
+    <div style="text-align: center; margin-bottom: 40px;">
+      <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Partner Integration Preview</span>
+      <h2 style="font-size: 32px; font-weight: 800; margin-top: 8px;">Shop Native Merchants</h2>
+      <p style="color: var(--text-secondary); margin-top: 8px;">Experience the native Smart Cart checkout on an integrated partner store.</p>
+    </div>
+
+    <div class="store-grid" id="store-product-grid">
+      <!-- Dynamically populated by app.js -->
+      <div style="text-align: center; grid-column: 1 / -1; padding: 40px; color: var(--text-muted);">
+        Loading partner products...
+      </div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

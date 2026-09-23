@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Cart Splitter - Demo Payment Gateway</title>
+  <meta name="description" content="Simulated payment portal for competition testing without real money.">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background: #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .payment-gateway-card {
+      background: white;
+      width: 100%;
+      max-width: 440px;
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-float);
+      border: 1px solid var(--border-light);
+      overflow: hidden;
+    }
+    .gateway-header {
+      background: #0f172a;
+      color: white;
+      padding: 24px;
+      text-align: center;
+    }
+    .gateway-body {
+      padding: 28px 24px;
+    }
+    .payment-method-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .payment-method-item:hover, .payment-method-item.selected {
+      border-color: var(--accent-blue);
+      background: var(--accent-blue-soft);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="payment-gateway-card">
+    <div class="gateway-header">
+      <div style="font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Razorpay Test Simulation</div>
+      <h2 style="font-size: 20px; font-weight: 800; color: white; margin-top: 4px;">Smart Cart Splitter Demo Payment</h2>
+      <p style="font-size: 13px; color: #cbd5e1; margin-top: 2px;">Zero-risk competition verification environment</p>
+    </div>
+
+    <div class="gateway-body">
+      <!-- Order & Payment Metadata (Section 15) -->
+      <div style="text-align: center; margin-bottom: 24px;">
+        <span id="split-sequence-label" style="font-size: 13px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Payment: 1 of 3</span>
+        <div id="payment-amount-val" style="font-size: 36px; font-weight: 800; color: var(--text-primary); margin: 6px 0;">₹1,560</div>
+        <div id="order-number-val" style="font-size: 14px; color: var(--text-secondary);">Order: ORD-XXXX</div>
+      </div>
+
+      <!-- Payment Method Simulation Options -->
+      <div style="margin-bottom: 20px;">
+        <label style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 8px;">Select Test Payment Method</label>
+        
+        <div class="payment-method-item selected">
+          <span>📱</span>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 600;">UPI / QR Instant Transfer</div>
+            <div style="font-size: 11px; color: var(--text-muted);">GPay, PhonePe, Paytm, BHIM</div>
+          </div>
+          <span style="color: var(--accent-blue); font-weight: 700;">✓</span>
+        </div>
+
+        <div class="payment-method-item">
+          <span>💳</span>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; font-weight: 600;">Credit / Debit Card</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Visa &bull; Mastercard &bull; RuPay</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simulation Action Button (Section 15) -->
+      <button id="simulate-submit-btn" class="btn-primary" style="background: var(--accent-green); box-shadow: 0 4px 14px 0 rgba(5, 150, 105, 0.3);" onclick="executeDemoPayment()">
+        ✓ Simulate Successful Payment
+      </button>
+
+      <div style="margin-top: 18px; text-align: center;">
+        <a id="cancel-link" href="/" style="font-size: 13px; color: var(--text-muted); text-decoration: underline;">
+          Cancel &amp; Return to Store
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE_URL) ||
+      (window.location.port === '5500' ? 'http://localhost:5000' : window.location.origin);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId') || urlParams.get('order');
+    const splitId = urlParams.get('splitId') || urlParams.get('split');
+
+    let orderData = null;
+    let splitData = null;
+
+    async function initDemoPage() {
+      if (!orderId) {
+        alert('Missing order parameter');
+        return;
+      }
+
+      document.getElementById('cancel-link').href = `/order.html?id=${orderId}`;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/orders/${orderId}`);
+        if (!res.ok) throw new Error('Order not found');
+        const data = await res.json();
+        orderData = data.order;
+
+        const targetSplit = splitId 
+          ? data.splits.find(s => s.id === splitId) 
+          : (data.splits.find(s => s.status === 'READY') || data.splits[0]);
+
+        splitData = targetSplit;
+
+        if (targetSplit) {
+          document.getElementById('split-sequence-label').textContent = `Payment: ${targetSplit.sequence_number} of ${data.splits.length}`;
+          document.getElementById('payment-amount-val').textContent = `₹${Number(targetSplit.amount).toLocaleString('en-IN')}`;
+          document.getElementById('order-number-val').textContent = `Order: ${orderData.order_number}`;
+        }
+      } catch (err) {
+        console.error('Failed to load demo payment data:', err);
+      }
+    }
+
+    async function executeDemoPayment() {
+      if (!orderId || !splitData) {
+        alert('Payment split details not ready');
+        return;
+      }
+
+      const btn = document.getElementById('simulate-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Verifying Transaction...';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/demo/complete-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: orderId,
+            splitId: splitData.id,
+            simulatedPaymentId: 'pay_sim_' + Math.floor(100000 + Math.random() * 900000)
+          })
+        });
+
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.error || 'Payment execution failed');
+        }
+
+        btn.textContent = '✓ Payment Captured!';
+        btn.style.background = '#059669';
+
+        // Redirect back to order status page after brief confirmation
+        setTimeout(() => {
+          window.location.href = `/order.html?id=${orderId}`;
+        }, 800);
+
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false;
+        btn.textContent = '✓ Simulate Successful Payment';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', initDemoPage);
+  </script>
+</body>
+</html>

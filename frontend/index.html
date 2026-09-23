@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Cart Splitter - The Modern Store</title>
+  <meta name="description" content="Break large checkout amounts into smaller payment steps with Smart Cart Splitter.">
+  <link rel="stylesheet" href="style.css">
+  <!-- Lightweight QR Code Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>THE MODERN STORE</h1>
+          <span>Smart Checkout Portal</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="/store" class="nav-link">Store</a>
+        <a href="/" class="nav-link active">Cart (<span id="cart-count-badge">0</span>)</a>
+        <a href="/dashboard.html" class="nav-link">Merchant Dashboard</a>
+        <a href="#" id="auth-nav-link" class="nav-link" onclick="openAuthModal()">Login</a>
+        <span id="mode-badge" class="badge badge-demo">⚡ Demo Mode</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="container">
+    <div class="checkout-grid">
+
+      <!-- LEFT COLUMN: Product & Cart Summary -->
+      <section class="card product-card">
+        <div>
+          <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Step 1 &bull; Select Cart Items</span>
+          <h2 style="font-size: 22px; font-weight: 700; margin-top: 2px;">Your Cart</h2>
+        </div>
+
+        <div id="cart-items-container" style="margin-top: 20px; margin-bottom: 20px; min-height: 200px;">
+          <!-- Dynamically populated by app.js -->
+        </div>
+
+        <!-- Customer Form -->
+        <div class="form-group" style="border-top: 1px solid var(--border-light); padding-top: 16px;">
+          <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: block;">Customer Information</label>
+          <div class="form-row">
+            <input type="text" id="customer-name" class="form-control" value="Aarav Mehta" placeholder="Full Name" />
+            <input type="email" id="customer-email" class="form-control" value="aarav@example.com" placeholder="Email Address" />
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Smart Cart Splitter & Payment Plan -->
+      <section class="card">
+        <div class="smart-splitter-header">
+          <div class="smart-title-area">
+            <span style="font-size: 11px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 0.05em;">Intelligent Checkout Engine</span>
+            <h2>SMART CART SPLITTER</h2>
+            <p>Break large checkout amounts into smaller payment steps.</p>
+          </div>
+          <span class="badge badge-ready">Automated</span>
+        </div>
+
+        <!-- Order Summary Box -->
+        <div class="summary-box">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <strong id="subtotal-display">₹4,680</strong>
+          </div>
+          <div class="summary-row">
+            <span>Payment threshold</span>
+            <span>₹2,000</span>
+          </div>
+          <div class="summary-row">
+            <span>Split required</span>
+            <span id="split-required-display" class="badge badge-ready">Yes</span>
+          </div>
+          <div class="summary-row">
+            <span>Number of payments</span>
+            <strong id="split-count-display">3 payments</strong>
+          </div>
+          <div class="summary-row total-row">
+            <span>Cart Total</span>
+            <span id="cart-total-display">₹4,680</span>
+          </div>
+        </div>
+
+        <!-- Estimated Savings Notification -->
+        <div class="savings-banner" id="savings-banner">
+          <div class="savings-icon">₹</div>
+          <div class="savings-content">
+            <h4>Estimated fee savings: <span id="savings-amount-display">₹18.72</span></h4>
+            <p>Demo calculation (0.4% rate) &bull; Not guaranteed 0% fees</p>
+          </div>
+        </div>
+
+        <!-- Smart Payment Plan Visualizer -->
+        <div class="split-plan-section">
+          <h3>
+            <span>Smart Payment Plan</span>
+            <small style="font-size: 12px; font-weight: normal; color: var(--text-muted);">Sequential Unlock</small>
+          </h3>
+
+          <div class="split-plan-list" id="split-plan-list">
+            <!-- Dynamically populated by app.js -->
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <button id="continue-btn" class="btn-primary" onclick="handleContinueToPayment()">
+          <span>Continue to Payment</span>
+          <span>&rarr;</span>
+        </button>
+
+        <div class="security-footer">
+          <span>✓</span>
+          <span>End-to-end encrypted &bull; Sequential state verification &bull; Razorpay secure</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- PAYMENT MODAL / OVERLAY -->
+  <div class="modal-overlay" id="payment-modal">
+    <div class="modal-card">
+      <button class="modal-close-btn" onclick="closeModal()" aria-label="Close modal">&times;</button>
+      
+      <div id="modal-content-wrapper">
+        <div class="payment-progress-header">
+          <div class="payment-step-indicator" id="modal-step-indicator">Payment 1 of 3</div>
+          <div class="payment-amount-display" id="modal-amount-display">₹1,560</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;" id="modal-order-number">Order ORD-91042</div>
+        </div>
+
+        <!-- QR Code Display Area -->
+        <div class="qr-wrapper">
+          <div class="qr-canvas-container" id="modal-qr-container">
+            <!-- QR rendered here -->
+          </div>
+          <div class="qr-label">
+            <span>📱</span> Scan to Pay with UPI or Mobile App
+          </div>
+        </div>
+
+        <div class="payment-actions">
+          <button class="btn-pay-now" id="modal-pay-now-btn">
+            <span>💳</span>
+            <span>Pay Now</span>
+          </button>
+
+          <!-- 1-Click Simulation Button for Competition Demonstration -->
+          <button class="btn-simulate" id="modal-simulate-btn" onclick="handleSimulatePayment()">
+            ⚡ Simulate Successful Payment
+          </button>
+        </div>
+
+        <!-- Live Polling Status -->
+        <div class="polling-status">
+          <div class="status-dot"></div>
+          <span>Waiting for payment &bull; Real-time server sync</span>
+        </div>
+
+        <div style="margin-top: 14px; font-size: 11px; color: var(--text-muted);">
+          Payment 2 becomes available only after Payment 1 is confirmed.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTH MODAL -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-card" style="max-width: 400px; text-align: center;">
+      <button class="modal-close-btn" onclick="closeAuthModal()" aria-label="Close modal">&times;</button>
+      <div style="padding: 20px;">
+        <h2>Login to Continue</h2>
+        <p style="color: var(--text-secondary); font-size: 14px; margin-top: 10px; margin-bottom: 30px;">
+          Secure your order by logging into your account.
+        </p>
+        <button onclick="handleLogin()" class="btn-primary" style="width: 100%; margin-bottom: 15px;">
+          Continue as Guest / Mock User
+        </button>
+        <p style="font-size: 12px; color: var(--text-muted);">
+          *Firebase Auth will be fully activated once API keys are provided.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

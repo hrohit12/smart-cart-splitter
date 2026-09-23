@@ -20,33 +20,13 @@
 
 ## 2. Architecture
 
-```
-                                    +-----------------------------------------+
-                                    |         CUSTOMER / FRONTEND             |
-                                    |    HTML5 + Vanilla JS + Modern CSS      |
-                                    +--------------------+--------------------+
-                                                         |
-                                   REST / JSON Requests  |   Polling (2s)
-                                                         v
-+----------------------------------------------------------------------------------------------------+
-|                                    EXPRESS BACKEND ENGINE                                          |
-|                                                                                                    |
-|   +--------------------------+  +--------------------------+  +--------------------------------+   |
-|   |  Split Math & Validation |  | Sequence Security Guard  |  |  HMAC Webhook Signature Verif  |   |
-|   +--------------------------+  +--------------------------+  +--------------------------------+   |
-|                                                                                                    |
-|   +--------------------------+                                +--------------------------------+   |
-|   |  DEMO Simulation Engine  |<==============================>|     Razorpay Test Mode SDK     |   |
-|   +--------------------------+                                +--------------------------------+   |
-+-------------------------------------------------+--------------------------------------------------+
-                                                  |
-                                                  v
-                               +--------------------------------------+
-                               |       DATABASE PERSISTENCE           |
-                               |  Supabase PostgreSQL (Real DB)       |
-                               |  & In-Memory Store (Turnkey Fallback)|
-                               +--------------------------------------+
-```
+<p align="center">
+  <img src="docs/architecture.png" alt="Smart Cart Splitter Architecture" width="100%">
+</p>
+
+<p align="center">
+  <i>Smart Cart Splitter — Frontend, backend, security, payments and database architecture.</i>
+</p>
 
 ---
 
